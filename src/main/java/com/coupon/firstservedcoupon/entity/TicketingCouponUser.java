@@ -22,5 +22,5 @@ public class TicketingCouponUser implements Serializable {
     @Id
     private Long memberSeq;
     @Indexed
-    private double randomValue;
+    private String randomValue;
 }

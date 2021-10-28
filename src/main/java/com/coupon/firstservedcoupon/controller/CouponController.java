@@ -27,7 +27,8 @@ public class CouponController {
         @PathVariable Integer couponId, @PathVariable Long userId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return this.couponService.ticketingCouponUser(couponId, userId);
+                var token = couponService.issueToken(couponId, userId);
+                return this.couponService.ticketingCouponUser(couponId, userId, token);
             } catch (Exception e) {
                 e.printStackTrace();
             }
