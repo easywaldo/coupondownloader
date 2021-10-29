@@ -1,5 +1,6 @@
 package com.coupon.firstservedcoupon.service;
 
+import com.coupon.firstservedcoupon.entity.CouponUser;
 import com.coupon.firstservedcoupon.repository.CouponUserRepository;
 import com.coupon.firstservedcoupon.repository.TicketingCouponUserRepository;
 import com.google.common.collect.Lists;
@@ -46,6 +47,8 @@ public class CouponServiceTest {
 
         // assert
         assertEquals(100, (long) couponUserRepository.findAll().size());
+        assertEquals(100, couponUserRepository.findAll().stream().collect(
+            Collectors.groupingBy(CouponUser::getMemberSeq)).entrySet().size());
     }
 
 }
