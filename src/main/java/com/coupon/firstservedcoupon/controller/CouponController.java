@@ -5,19 +5,25 @@ import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.service.CouponService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/coupon")
 public class CouponController {
 
     private final CouponService couponService;
+    @Value("${time.test-mode}")
+    public Boolean timeTestMode;
 
     @Autowired
     public CouponController(CouponService couponService) {
@@ -27,22 +33,17 @@ public class CouponController {
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @Async
     @GetMapping(value = "/download/{couponId}/{userId}")
-    public CompletableFuture<?> downloadCoupon(
+    public Mono<ResponseEntity<?>> downloadCoupon(
         @PathVariable Integer couponId, @PathVariable Long userId) {
 
-        if (LocalDateTime.now().getHour() < 13) {
-            return CompletableFuture.completedFuture(ResponseEntity.accepted().body(CouponDownResultEnum.TIME_UNMATCHED));
+        if (timeTestMode.equals(false) && LocalDateTime.now().getHour() < 13) {
+            return Mono.just(ResponseEntity.accepted().body(CouponDownResultEnum.TIME_UNMATCHED));
         }
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                var token = couponService.issueToken(couponId, userId);
-                var result = this.couponService.ticketingCouponUser(couponId, userId, token);
-                return ResponseEntity.accepted().body(result);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return "error raised";
+        return Mono.defer(() -> {
+            var token = couponService.issueToken(couponId, userId);
+            var result = this.couponService.ticketingCouponUser(couponId, userId, token);
+            return Mono.just(ResponseEntity.accepted().body(result));
         });
     }
 
