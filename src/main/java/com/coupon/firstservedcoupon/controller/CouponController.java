@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -40,6 +41,11 @@ public class CouponController {
             return Mono.just(ResponseEntity.accepted().body(CouponDownResultEnum.TIME_UNMATCHED));
         }
 
+        var searchDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        if (couponService.selectCouponUserList(searchDate).size() == 100) {
+            return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.ALREADY_FINISHED));
+        }
+
         return Mono.defer(() -> {
             var token = couponService.issueToken(couponId, userId);
             var result = this.couponService.ticketingCouponUser(couponId, userId, token);
@@ -48,9 +54,8 @@ public class CouponController {
     }
 
     @ApiOperation(value = "다운로드 완료된 회원들에 대한 조회를 수행한다", notes = "")
-    @GetMapping(value = "/userCouponList/{yyyyMMdd}/")
-    public ResponseEntity<List<CouponUserResponseDto>> selectCouponUserList(@PathVariable String yyyyMMdd) {
-        return ResponseEntity.accepted().body(this.couponService.selectCouponUserList(yyyyMMdd));
-
+    @GetMapping(value = "/userCouponList/{yyyyMMdd}")
+    public Mono<ResponseEntity<List<CouponUserResponseDto>>> selectCouponUserList(@PathVariable String yyyyMMdd) {
+        return Mono.just(ResponseEntity.accepted().body(this.couponService.selectCouponUserList(yyyyMMdd)));
     }
 }

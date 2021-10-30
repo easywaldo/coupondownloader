@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -153,6 +155,7 @@ public class CouponServiceTest {
     @Test
     public void 쿠폰_동시_다운로드_응모_후_당첨자_리스트를_확인한다() {
         // arrange
+        var searchDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         List<Integer> sampleCountList = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 3);
 
@@ -164,7 +167,7 @@ public class CouponServiceTest {
             }));
 
         // assert
-        var result = couponService.selectCouponUserList("20211030");
+        var result = couponService.selectCouponUserList(searchDate);
         assertEquals(100, result.size());
         assertEquals(100, result.stream()
             .filter(x -> x.getCouponType().equals(CouponTypeEnum.TYPE_B.name())).count());
