@@ -4,6 +4,6 @@ public enum CouponTypeEnum {
     TYPE_A("A"),
     TYPE_B("B");
 
-    CouponTypeEnum(String b) {
+    CouponTypeEnum(String value) {
     }
 }
