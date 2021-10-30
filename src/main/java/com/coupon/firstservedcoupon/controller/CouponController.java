@@ -7,15 +7,14 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
+@RequestMapping("/coupon")
 public class CouponController {
 
     private final CouponService couponService;
@@ -27,7 +26,7 @@ public class CouponController {
 
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @Async
-    @GetMapping(value = "/downloadCoupon/{couponId}/{userId}")
+    @GetMapping(value = "/download/{couponId}/{userId}")
     public CompletableFuture<?> downloadCoupon(
         @PathVariable Integer couponId, @PathVariable Long userId) {
 
@@ -48,7 +47,7 @@ public class CouponController {
     }
 
     @ApiOperation(value = "다운로드 완료된 회원들에 대한 조회를 수행한다", notes = "")
-    @GetMapping(value = "/selectUserCouponList/{yyyyMMdd}/")
+    @GetMapping(value = "/userCouponList/{yyyyMMdd}/")
     public ResponseEntity<List<CouponUserResponseDto>> selectCouponUserList(@PathVariable String yyyyMMdd) {
         return ResponseEntity.accepted().body(this.couponService.selectCouponUserList(yyyyMMdd));
 
