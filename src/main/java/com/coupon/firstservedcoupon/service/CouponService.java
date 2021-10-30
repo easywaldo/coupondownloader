@@ -76,7 +76,7 @@ public class CouponService {
 
         setTicketing(userId, token);
 
-        CouponUser couponUser = this.couponUserRepository.findByMemberSeqEqualsAndCouponSeqEquals(userId, couponId);
+        CouponUser couponUser = this.couponUserRepository.findByMemberSeqEquals(userId);
         if (couponUser != null) {
             System.out.println("already gave");
             return CouponDownResultEnum.ALREADY_GET;

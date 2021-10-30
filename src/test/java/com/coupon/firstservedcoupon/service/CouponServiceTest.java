@@ -116,6 +116,22 @@ public class CouponServiceTest {
     }
 
     @Test
+    public void 이미_쿠폰을_1개_소유하고_있는_아이디로_기존과_다른_쿠폰을_다운로드를_시도할때_다운로드가_실패한다() {
+        // arrange
+        var firstCouponId = 1;
+        var secondCouponId = 2;
+        var memberSeq = 1000L;
+        this.couponService.ticketingCouponUser(firstCouponId, memberSeq, this.couponService.issueToken(firstCouponId, memberSeq));
+
+        // act
+        var result = this.couponService.ticketingCouponUser(
+            firstCouponId, memberSeq, this.couponService.issueToken(secondCouponId, memberSeq));
+
+        // assert
+        assertEquals(CouponDownResultEnum.ALREADY_GET, result);
+    }
+
+    @Test
     public void 이미_쿠폰이_해당일자에_100개가_소진이_되었다면_쿠폰_다운로드를_시도할때_다운로드가_실패한다() {
         // arrange
         List<Integer> sampleCountList = IntStream.range(1, 101).boxed().collect(Collectors.toList());
