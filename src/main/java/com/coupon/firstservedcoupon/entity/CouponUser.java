@@ -26,7 +26,6 @@ public class CouponUser {
     private String couponType;
     @Column(name = "expired_date")
     private LocalDateTime expiredDate;
-    @CreationTimestamp
     @Column(name = "create_date")
     private LocalDateTime createDate;
     @UpdateTimestamp
@@ -34,10 +33,15 @@ public class CouponUser {
     private LocalDateTime updateDate;
 
     @Builder
-    public CouponUser(Long memberSeq, Integer couponSeq, String couponType, LocalDateTime expiredDate) {
+    public CouponUser(Long memberSeq,
+                      Integer couponSeq,
+                      String couponType,
+                      LocalDateTime createDate,
+                      LocalDateTime expiredDate) {
         this.memberSeq = memberSeq;
         this.couponSeq = couponSeq;
         this.couponType = couponType;
+        this.createDate = createDate;
         this.expiredDate = expiredDate;
     }
 }

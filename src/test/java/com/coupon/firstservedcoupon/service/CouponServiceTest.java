@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,12 +60,15 @@ public class CouponServiceTest {
         // arrange
         List<Integer> sampleCountList = IntStream.range(0, 10000).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 3);
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
 
         // act
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
                 var token = this.couponService.issueToken(1, member.longValue());
-                this.couponService.ticketingCouponUser(1, member.longValue(), token);
+                this.couponService.ticketingCouponUser(now,1, member.longValue(), token);
             }));
 
         // assert
@@ -79,10 +82,13 @@ public class CouponServiceTest {
         // arrange
         var couponId = 9999;
         var memberSeq = 10L;
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
 
         // act
         var token = this.couponService.issueToken(couponId, memberSeq);
-        var result = this.couponService.ticketingCouponUser(couponId, memberSeq, token);
+        var result = this.couponService.ticketingCouponUser(now, couponId, memberSeq, token);
 
         // assert
         assertEquals(CouponDownResultEnum.COUPON_NOT_FOUND, result);
@@ -93,13 +99,33 @@ public class CouponServiceTest {
         // arrange
         var couponId = 1;
         var memberSeq = 50000L;
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
 
         // act
         var token = this.couponService.issueToken(couponId, memberSeq);
-        var result = this.couponService.ticketingCouponUser(couponId, memberSeq, token);
+        var result = this.couponService.ticketingCouponUser(now, couponId, memberSeq, token);
 
         // assert
         assertEquals(CouponDownResultEnum.MEMBER_NOT_FOUND, result);
+    }
+
+    @Test
+    public void 다운로드_가능하지_않은_시점에_다운로드를_시도할때_다운로드가_실패한다() {
+        // arrange
+        var couponId = 1;
+        var memberSeq = 1L;
+        String instantExpected = "2021-10-30T02:59:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
+
+        // act
+        var token = this.couponService.issueToken(couponId, memberSeq);
+        var result = this.couponService.ticketingCouponUser(now, couponId, memberSeq, token);
+
+        // assert
+        assertEquals(CouponDownResultEnum.TIME_UNMATCHED, result);
     }
 
     @Test
@@ -107,11 +133,14 @@ public class CouponServiceTest {
         // arrange
         var couponId = 1;
         var memberSeq = 1000L;
-        this.couponService.ticketingCouponUser(couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
+        this.couponService.ticketingCouponUser(now, couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
 
         // act
         var result = this.couponService.ticketingCouponUser(
-            couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
+            now, couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
 
         // assert
         assertEquals(CouponDownResultEnum.ALREADY_GET, result);
@@ -123,11 +152,14 @@ public class CouponServiceTest {
         var firstCouponId = 1;
         var secondCouponId = 2;
         var memberSeq = 1000L;
-        this.couponService.ticketingCouponUser(firstCouponId, memberSeq, this.couponService.issueToken(firstCouponId, memberSeq));
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
+        this.couponService.ticketingCouponUser(now, firstCouponId, memberSeq, this.couponService.issueToken(firstCouponId, memberSeq));
 
         // act
         var result = this.couponService.ticketingCouponUser(
-            firstCouponId, memberSeq, this.couponService.issueToken(secondCouponId, memberSeq));
+            now, firstCouponId, memberSeq, this.couponService.issueToken(secondCouponId, memberSeq));
 
         // assert
         assertEquals(CouponDownResultEnum.ALREADY_GET, result);
@@ -136,17 +168,21 @@ public class CouponServiceTest {
     @Test
     public void 이미_쿠폰이_해당일자에_100개가_소진이_되었다면_쿠폰_다운로드를_시도할때_다운로드가_실패한다() {
         // arrange
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
         List<Integer> sampleCountList = IntStream.range(1, 101).boxed().collect(Collectors.toList());
         sampleCountList.forEach(x -> {
             var token = this.couponService.issueToken(2, x.longValue());
-            this.couponService.ticketingCouponUser(2, x.longValue(), token);
+            this.couponService.ticketingCouponUser(now,2, x.longValue(), token);
         });
         var couponId = 2;
         var memberSeq = 200L;
 
+
         // act
         var result = this.couponService.ticketingCouponUser(
-            couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
+            now, couponId, memberSeq, this.couponService.issueToken(couponId, memberSeq));
 
         // assert
         assertEquals(CouponDownResultEnum.ALREADY_FINISHED, result);
@@ -155,15 +191,18 @@ public class CouponServiceTest {
     @Test
     public void 쿠폰_동시_다운로드_응모_후_당첨자_리스트를_확인한다() {
         // arrange
-        var searchDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         List<Integer> sampleCountList = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 3);
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
+        var searchDate = now.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         // act
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
                 var token = this.couponService.issueToken(2, member.longValue());
-                this.couponService.ticketingCouponUser(2, member.longValue(), token);
+                this.couponService.ticketingCouponUser(now,2, member.longValue(), token);
             }));
 
         // assert

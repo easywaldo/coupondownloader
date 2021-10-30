@@ -14,8 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.test.StepVerifier;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,8 +38,11 @@ public class CouponControllerTest {
 
     @Test
     public void 쿠폰_다운로드_웹_요청_테스트() {
+        // arrange
+        String instantExpected = "2021-10-30T04:00:00Z";
+
         // assert
-        this.webTestClient.get().uri("/coupon/download/1/1")
+        this.webTestClient.get().uri("/coupon/download/1/1/"+ instantExpected)
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isAccepted()
@@ -56,14 +58,17 @@ public class CouponControllerTest {
     @Test
     public void 쿠폰_다운로드_웹_동시_요청_테스트() {
         // arrange
-        var searchDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         List<Integer> sampleCountList = IntStream.range(1, 501).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 4);
+        String instantExpected = "2021-10-30T04:00:00Z";
+        Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
+        Instant now = Instant.now(clock);
+        var searchDate = now.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         // act
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
-                this.webTestClient.get().uri("/coupon/download/1/1")
+                this.webTestClient.get().uri("/coupon/download/1/1/" + instantExpected)
                     .accept(MediaType.APPLICATION_JSON)
                     .exchange()
                     .expectStatus()

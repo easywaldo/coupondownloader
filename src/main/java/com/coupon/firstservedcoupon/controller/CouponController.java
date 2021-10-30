@@ -1,7 +1,6 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
-import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.service.CouponService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.*;
 import java.util.List;
 
 @RestController
@@ -31,24 +29,24 @@ public class CouponController {
         this.couponService = couponService;
     }
 
+    /***
+     *
+     * @param couponId
+     * @param userId
+     * @param testTime : "2021-10-31_140000"
+     * @return
+     */
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @Async
-    @GetMapping(value = "/download/{couponId}/{userId}")
+    @GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
     public Mono<ResponseEntity<?>> downloadCoupon(
         @PathVariable Integer couponId, @PathVariable Long userId) {
 
-        if (timeTestMode.equals(false) && LocalDateTime.now().getHour() < 13) {
-            return Mono.just(ResponseEntity.accepted().body(CouponDownResultEnum.TIME_UNMATCHED));
-        }
-
-        var searchDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        if (couponService.selectCouponUserList(searchDate).size() == 100) {
-            return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.ALREADY_FINISHED));
-        }
-
         return Mono.defer(() -> {
+            //TODO: 웹컨트롤러 테스트 하는 경우 시간에 따라 실패가 될 수 있으므로 아래 now 변수를 수정해서 진행할 것.
+            Instant now = LocalDateTime.now(ZoneId.of("Asia/Seoul")).atZone(ZoneId.of("Asia/Seoul")).toInstant();
             var token = couponService.issueToken(couponId, userId);
-            var result = this.couponService.ticketingCouponUser(couponId, userId, token);
+            var result = this.couponService.ticketingCouponUser(now, couponId, userId, token);
             return Mono.just(ResponseEntity.accepted().body(result));
         });
     }

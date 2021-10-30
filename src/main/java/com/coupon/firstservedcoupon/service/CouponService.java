@@ -14,8 +14,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
@@ -58,7 +57,15 @@ public class CouponService {
     }
 
     @Transactional(readOnly = false, isolation = Isolation.READ_UNCOMMITTED, propagation = Propagation.REQUIRED)
-    public CouponDownResultEnum ticketingCouponUser(Integer couponId, Long userId, String token) {
+    public CouponDownResultEnum ticketingCouponUser(
+        Instant now,
+        Integer couponId,
+        Long userId,
+        String token) {
+
+        if (now.atZone(ZoneId.of("Asia/Seoul")).getHour() < 13) {
+            return CouponDownResultEnum.TIME_UNMATCHED;
+        }
 
         var couponCatalog = couponCatalogRepository.findById(couponId);
         if (couponCatalog.isEmpty()) {
@@ -94,6 +101,7 @@ public class CouponService {
                 .memberSeq(userId)
                 .couponType(couponCatalog.get().getCouponType().name())
                 .expiredDate(couponCatalog.get().getExpiredDate())
+                .createDate(now.atZone(ZoneOffset.UTC).toLocalDateTime())
                 .build());
             Thread.sleep(50L);
             return CouponDownResultEnum.COUPON_DOWNLOADED;
