@@ -12,6 +12,7 @@ import com.coupon.firstservedcoupon.repository.TicketingCouponUserRepository;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.test.StepVerifier;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -26,10 +29,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-public class CouponControllerTest {
+public class CouponControllerTest extends Mockito {
     @Autowired
     public WebTestClient webTestClient;
 
@@ -71,12 +76,16 @@ public class CouponControllerTest {
     public void 쿠폰_다운로드_웹_요청_테스트() {
         // arrange
         String instantExpected = "2021-10-30T04:00:00Z";
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(request.getParameter("userJwt")).thenReturn("test");
 
         // assert
         this.webTestClient.get().uri("/coupon/download/1/1/"+ instantExpected)
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
-            .expectStatus().isAccepted()
+            .expectStatus()
+            .isAccepted()
             .returnResult(CouponDownResultEnum.class)
             .getResponseBody()
             .as(StepVerifier::create)

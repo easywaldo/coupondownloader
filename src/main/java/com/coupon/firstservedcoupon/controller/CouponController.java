@@ -1,7 +1,6 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
-import com.coupon.firstservedcoupon.dto.ValidMemberRequestDto;
 import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.service.AuthService;
 import com.coupon.firstservedcoupon.service.CouponService;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Clock;
@@ -48,11 +48,11 @@ public class CouponController {
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
     public Mono<ResponseEntity<?>> downloadCoupon(
-        HttpServletRequest request,
+        @ApiIgnore HttpServletRequest request,
         @PathVariable Integer couponId, @PathVariable Long userId, @PathVariable String testTime) {
 
         String jwtString = this.authService.getUserIdFromJwtCookie(request);
-        if (jwtString.equals("") || !this.memberService.isExistsUser(jwtString)) {
+        if (timeTestMode.equals(false) && (jwtString.equals("") || !this.memberService.isExistsUser(jwtString))) {
             return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.MEMBER_NOT_FOUND));
         }
 
