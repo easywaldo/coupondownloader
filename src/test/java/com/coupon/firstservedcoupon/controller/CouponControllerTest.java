@@ -9,6 +9,7 @@ import com.coupon.firstservedcoupon.repository.CouponCatalogRepository;
 import com.coupon.firstservedcoupon.repository.CouponUserRepository;
 import com.coupon.firstservedcoupon.repository.MemberRepository;
 import com.coupon.firstservedcoupon.repository.TicketingCouponUserRepository;
+import com.coupon.firstservedcoupon.service.AuthService;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.test.StepVerifier;
 
+import java.io.UnsupportedEncodingException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -41,6 +43,8 @@ public class CouponControllerTest {
     public CouponCatalogRepository couponCatalogRepository;
     @Autowired
     public MemberRepository memberRepository;
+    @Autowired
+    public AuthService authService;
 
     @BeforeEach
     public void setUp() {
@@ -61,22 +65,30 @@ public class CouponControllerTest {
                 .couponCatalogSeq(2)
                 .build()
         ));
-        var memberList = IntStream.range(0, 10000).boxed().collect(Collectors.toList()).stream().map(m -> Member.builder()
-            .memberSeq(m.longValue())
-            .build()).collect(Collectors.toList());
+        var memberList = IntStream.range(0, 10000)
+            .boxed()
+            .collect(Collectors.toList())
+            .stream()
+            .map(m -> Member.builder()
+                .memberSeq(m.longValue())
+                .userId(m.toString())
+                .userPwd(m.toString())
+                .build()).collect(Collectors.toList());
         memberRepository.saveAll(memberList);
     }
 
     @Test
-    public void 쿠폰_다운로드_웹_요청_테스트() {
+    public void 쿠폰_다운로드_웹_요청_테스트() throws UnsupportedEncodingException {
         // arrange
         String instantExpected = "2021-10-30T04:00:00Z";
 
         // assert
         this.webTestClient.get().uri("/coupon/download/1/1/"+ instantExpected)
             .accept(MediaType.APPLICATION_JSON)
+            .cookie("userJwt", authService.issueToken("1"))
             .exchange()
-            .expectStatus().isAccepted()
+            .expectStatus()
+            .isAccepted()
             .returnResult(CouponDownResultEnum.class)
             .getResponseBody()
             .as(StepVerifier::create)
@@ -99,11 +111,16 @@ public class CouponControllerTest {
         // act
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
-                this.webTestClient.get().uri(String.format("/coupon/download/%s/%s/%s", 1, member, instantExpected))
-                    .accept(MediaType.APPLICATION_JSON)
-                    .exchange()
-                    .expectStatus()
-                    .isAccepted();
+                try {
+                    this.webTestClient.get().uri(String.format("/coupon/download/%s/%s/%s", 1, member, instantExpected))
+                        .accept(MediaType.APPLICATION_JSON)
+                        .cookie("userJwt", authService.issueToken("1"))
+                        .exchange()
+                        .expectStatus()
+                        .isAccepted();
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
             }));
 
         // assert

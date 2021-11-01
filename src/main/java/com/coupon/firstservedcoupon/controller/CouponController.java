@@ -1,7 +1,6 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
-import com.coupon.firstservedcoupon.dto.ValidMemberRequestDto;
 import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.service.AuthService;
 import com.coupon.firstservedcoupon.service.CouponService;
