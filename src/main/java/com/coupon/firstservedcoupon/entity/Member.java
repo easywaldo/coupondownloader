@@ -16,8 +16,17 @@ public class Member {
     @Column(name = "member_seq")
     private Long memberSeq;
 
+    @Column(name = "user_id")
+    private String userId;
+    @Column(name = "user_pwd")
+    private String userPwd;
+
     @Builder
-    public Member(Long memberSeq) {
+    public Member(Long memberSeq,
+                  String userId,
+                  String userPwd) {
         this.memberSeq = memberSeq;
+        this.userId = userId;
+        this.userPwd = userPwd;
     }
 }

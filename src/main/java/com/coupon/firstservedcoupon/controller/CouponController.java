@@ -1,7 +1,11 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
+import com.coupon.firstservedcoupon.dto.ValidMemberRequestDto;
+import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
+import com.coupon.firstservedcoupon.service.AuthService;
 import com.coupon.firstservedcoupon.service.CouponService;
+import com.coupon.firstservedcoupon.service.MemberService;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -27,18 +32,29 @@ public class CouponController {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final CouponService couponService;
+    private final AuthService authService;
+    private final MemberService memberService;
+
     @Value("${time.test-mode}")
     public Boolean timeTestMode;
 
     @Autowired
-    public CouponController(CouponService couponService) {
+    public CouponController(CouponService couponService, AuthService authService, MemberService memberService) {
         this.couponService = couponService;
+        this.authService = authService;
+        this.memberService = memberService;
     }
 
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
     public Mono<ResponseEntity<?>> downloadCoupon(
+        HttpServletRequest request,
         @PathVariable Integer couponId, @PathVariable Long userId, @PathVariable String testTime) {
+
+        String jwtString = this.authService.getUserIdFromJwtCookie(request);
+        if (jwtString.equals("") || !this.memberService.isExistsUser(jwtString)) {
+            return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.MEMBER_NOT_FOUND));
+        }
 
         Mono<ResponseEntity<?>> delayedResult = Mono.defer(() -> {
             //TODO: 주의사항 >> 웹컨트롤러 테스트 하는 경우 시간에 따라 실패가 될 수 있으므로 아래 now 변수를 수정해서 진행할 것.

@@ -6,6 +6,7 @@ import com.coupon.firstservedcoupon.entity.Member;
 import com.coupon.firstservedcoupon.repository.CouponCatalogRepository;
 import com.coupon.firstservedcoupon.repository.MemberRepository;
 import com.coupon.firstservedcoupon.repository.TicketingCouponUserRepository;
+import com.coupon.firstservedcoupon.service.SHAEncryptServiceImpl;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -41,8 +42,13 @@ public class FirstServedCouponApplication {
                     .couponCatalogSeq(2)
                     .build()
             ));
-            var memberList = IntStream.range(0, 10001).boxed().collect(Collectors.toList()).stream().map(m -> Member.builder()
+            var memberList = IntStream.range(0, 10001)
+                .boxed()
+                .collect(Collectors.toList())
+                .stream().map(m -> Member.builder()
                 .memberSeq(m.longValue())
+                .userId(m.toString())
+                .userPwd(SHAEncryptServiceImpl.getSHA512(m.toString()))
                 .build()).collect(Collectors.toList());
             memberRepository.saveAll(memberList);
         };
