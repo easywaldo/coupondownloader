@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -37,11 +38,15 @@ public class CouponController {
     @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
     @GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
     public Mono<ResponseEntity<?>> downloadCoupon(
-        @PathVariable Integer couponId, @PathVariable Long userId) {
+        @PathVariable Integer couponId, @PathVariable Long userId, @PathVariable String testTime) {
 
         Mono<ResponseEntity<?>> delayedResult = Mono.defer(() -> {
-            //TODO: 웹컨트롤러 테스트 하는 경우 시간에 따라 실패가 될 수 있으므로 아래 now 변수를 수정해서 진행할 것.
-            Instant now = LocalDateTime.now(ZoneId.of("Asia/Seoul")).atZone(ZoneId.of("Asia/Seoul")).toInstant();
+            //TODO: 주의사항 >> 웹컨트롤러 테스트 하는 경우 시간에 따라 실패가 될 수 있으므로 아래 now 변수를 수정해서 진행할 것.
+            Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+            if (timeTestMode) {
+                Clock clock = Clock.fixed(Instant.parse(testTime), ZoneId.of("UTC"));
+                now = Instant.now(clock);
+            }
             var token = couponService.issueToken(couponId, userId);
             var result = this.couponService.ticketingCouponUser(now, couponId, userId, token);
             logger.info("completed : " + result.name());

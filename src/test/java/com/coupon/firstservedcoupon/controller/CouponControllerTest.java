@@ -1,9 +1,14 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
+import com.coupon.firstservedcoupon.entity.CouponCatalog;
 import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.entity.CouponTypeEnum;
+import com.coupon.firstservedcoupon.entity.Member;
+import com.coupon.firstservedcoupon.repository.CouponCatalogRepository;
 import com.coupon.firstservedcoupon.repository.CouponUserRepository;
+import com.coupon.firstservedcoupon.repository.MemberRepository;
+import com.coupon.firstservedcoupon.repository.TicketingCouponUserRepository;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,10 +35,36 @@ public class CouponControllerTest {
 
     @Autowired
     public CouponUserRepository couponUserRepository;
+    @Autowired
+    public TicketingCouponUserRepository ticketingCouponUserRepository;
+    @Autowired
+    public CouponCatalogRepository couponCatalogRepository;
+    @Autowired
+    public MemberRepository memberRepository;
 
     @BeforeEach
     public void setUp() {
-        webTestClient = webTestClient.mutate().responseTimeout(Duration.ofMillis(50000)).build();
+        webTestClient = webTestClient
+            .mutate()
+            .responseTimeout(Duration.ofMillis(50000))
+            .build();
+
+        this.couponUserRepository.deleteAll();
+        this.ticketingCouponUserRepository.deleteAll();
+        this.couponCatalogRepository.saveAll(List.of(
+            CouponCatalog.builder()
+                .couponType(CouponTypeEnum.TYPE_A)
+                .couponCatalogSeq(1)
+                .build(),
+            CouponCatalog.builder()
+                .couponType(CouponTypeEnum.TYPE_B)
+                .couponCatalogSeq(2)
+                .build()
+        ));
+        var memberList = IntStream.range(0, 10000).boxed().collect(Collectors.toList()).stream().map(m -> Member.builder()
+            .memberSeq(m.longValue())
+            .build()).collect(Collectors.toList());
+        memberRepository.saveAll(memberList);
     }
 
     @Test
@@ -58,7 +89,7 @@ public class CouponControllerTest {
     @Test
     public void 쿠폰_다운로드_웹_동시_요청_테스트() {
         // arrange
-        List<Integer> sampleCountList = IntStream.range(1, 501).boxed().collect(Collectors.toList());
+        List<Integer> sampleCountList = IntStream.range(1, 101).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 4);
         String instantExpected = "2021-10-30T04:00:00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
@@ -68,7 +99,7 @@ public class CouponControllerTest {
         // act
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
-                this.webTestClient.get().uri("/coupon/download/1/1/" + instantExpected)
+                this.webTestClient.get().uri(String.format("/coupon/download/%s/%s/%s", 1, member, instantExpected))
                     .accept(MediaType.APPLICATION_JSON)
                     .exchange()
                     .expectStatus()
@@ -84,10 +115,11 @@ public class CouponControllerTest {
             .returnResult(CouponUserResponseDto.class)
             .getResponseBody()
             .as(StepVerifier::create)
-            .expectNextMatches(item -> {
-                assertEquals(CouponTypeEnum.TYPE_A.name(), item.getCouponType());
+            .thenConsumeWhile(x -> {
+                assertEquals(CouponTypeEnum.TYPE_A.name(), x.getCouponType());
                 return true;
-            }).verifyComplete();
+            })
+            .verifyComplete();
 
     }
 

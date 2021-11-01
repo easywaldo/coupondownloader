@@ -46,7 +46,8 @@ public class CouponService {
         char prefixA =  prefixValue.charAt(random.nextInt(prefixValue.length()));
         char prefixB =  prefixValue.charAt(random.nextInt(prefixValue.length()));
         char prefixC =  prefixValue.charAt(random.nextInt(prefixValue.length()));
-        return String.format("%s%s%s%s%s%s", couponId, userId, microTime, prefixA, prefixB, prefixC);
+        char prefixD =  prefixValue.charAt(random.nextInt(prefixValue.length()));
+        return String.format("%s%s%s%s%s%s%s", couponId, userId, microTime, prefixA, prefixB, prefixC, prefixD);
     }
 
     public void setTicketing(Long userId, String token) {
