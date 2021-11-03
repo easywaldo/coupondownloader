@@ -116,7 +116,7 @@ public class CouponService {
     @Transactional(readOnly = true)
     public List<CouponUserResponseDto> selectCouponUserList(String searchDate) {
         LocalDateTime fromDate = LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyyMMdd")).atTime(0, 0);
-        LocalDateTime toDate = fromDate.plusDays(1);
+        LocalDateTime toDate = fromDate.plusDays(1).toLocalDate().atTime(0, 0);
 
         var result = couponUserRepository.findCouponUserByCreateDateBetweenOrderByCouponUserSeqDesc(fromDate, toDate);
         return result.stream().map(x -> CouponUserResponseDto.builder()
