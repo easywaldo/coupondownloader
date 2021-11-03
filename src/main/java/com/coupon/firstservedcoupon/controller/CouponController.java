@@ -1,20 +1,19 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
+import com.coupon.firstservedcoupon.dto.DownloadCouponRequestDto;
 import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.service.AuthService;
 import com.coupon.firstservedcoupon.service.CouponService;
 import com.coupon.firstservedcoupon.service.MemberService;
+import com.google.common.base.Strings;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
@@ -44,11 +43,12 @@ public class CouponController {
         this.memberService = memberService;
     }
 
-    @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.")
-    @GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
+    @ApiOperation(value = "쿠폰다운로드", notes = "쿠폰다운로드를 요청한다.\n예시:1 또는 2로 하여 couponId를 입력\n2021-10-30T04:00:00Z와 같은 형식으로 testTime입력\nuserId는 1부터 10000사이의 값을 입력")
+    //@GetMapping(value = "/download/{couponId}/{userId}/{testTime}")
+    @PostMapping(value = "/download")
     public Mono<ResponseEntity<?>> downloadCoupon(
         HttpServletRequest request,
-        @PathVariable Integer couponId, @PathVariable Long userId, @PathVariable String testTime) {
+        @RequestBody DownloadCouponRequestDto requestDto) {
 
         String jwtString = this.authService.getUserIdFromJwtCookie(request);
         if (jwtString.equals("") || !this.memberService.isExistsUser(jwtString)) {
@@ -58,12 +58,12 @@ public class CouponController {
         Mono<ResponseEntity<?>> delayedResult = Mono.defer(() -> {
             //TODO: 주의사항 >> 웹컨트롤러 테스트 하는 경우 시간에 따라 실패가 될 수 있으므로 아래 now 변수를 수정해서 진행할 것.
             Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
-            if (timeTestMode) {
-                Clock clock = Clock.fixed(Instant.parse(testTime), ZoneId.of("UTC"));
+            if (timeTestMode || !Strings.isNullOrEmpty(requestDto.getTestTime())) {
+                Clock clock = Clock.fixed(Instant.parse(requestDto.getTestTime()), ZoneId.of("UTC"));
                 now = Instant.now(clock);
             }
-            var token = couponService.issueToken(couponId, userId);
-            var result = this.couponService.ticketingCouponUser(now, couponId, userId, token);
+            var token = couponService.issueToken(requestDto.getCouponId(), requestDto.getUserId());
+            var result = this.couponService.ticketingCouponUser(now, requestDto.getCouponId(), requestDto.getUserId(), token);
             logger.info("completed : " + result.name());
             return Mono.just(ResponseEntity.accepted().body(result));
         });

@@ -1,6 +1,7 @@
 package com.coupon.firstservedcoupon.controller;
 
 import com.coupon.firstservedcoupon.dto.CouponUserResponseDto;
+import com.coupon.firstservedcoupon.dto.DownloadCouponRequestDto;
 import com.coupon.firstservedcoupon.entity.CouponCatalog;
 import com.coupon.firstservedcoupon.entity.CouponDownResultEnum;
 import com.coupon.firstservedcoupon.entity.CouponTypeEnum;
@@ -24,10 +25,12 @@ import java.io.UnsupportedEncodingException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
@@ -83,7 +86,12 @@ public class CouponControllerTest {
         String instantExpected = "2021-10-30T04:00:00Z";
 
         // assert
-        this.webTestClient.get().uri("/coupon/download/1/1/"+ instantExpected)
+        this.webTestClient.post().uri("/coupon/download")
+            .bodyValue(DownloadCouponRequestDto.builder()
+                .couponId(1)
+                .userId(1L)
+                .testTime(instantExpected)
+                .build())
             .accept(MediaType.APPLICATION_JSON)
             .cookie("userJwt", authService.issueToken("1"))
             .exchange()
@@ -101,7 +109,7 @@ public class CouponControllerTest {
     @Test
     public void 쿠폰_다운로드_웹_동시_요청_테스트() {
         // arrange
-        List<Integer> sampleCountList = IntStream.range(1, 101).boxed().collect(Collectors.toList());
+        List<Integer> sampleCountList = IntStream.range(1, 201).boxed().collect(Collectors.toList());
         List<List<Integer>> subList = Lists.partition(sampleCountList, 4);
         String instantExpected = "2021-10-30T04:00:00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
@@ -112,9 +120,14 @@ public class CouponControllerTest {
         subList.parallelStream().forEach(x ->
             x.forEach(member -> {
                 try {
-                    this.webTestClient.get().uri(String.format("/coupon/download/%s/%s/%s", 1, member, instantExpected))
+                    this.webTestClient.post().uri("/coupon/download")
+                        .bodyValue(DownloadCouponRequestDto.builder()
+                            .couponId(new Random().nextInt(2))
+                            .userId(member.longValue())
+                            .testTime(instantExpected)
+                            .build())
                         .accept(MediaType.APPLICATION_JSON)
-                        .cookie("userJwt", authService.issueToken("1"))
+                        .cookie("userJwt", authService.issueToken(member.toString()))
                         .exchange()
                         .expectStatus()
                         .isAccepted();
@@ -133,7 +146,7 @@ public class CouponControllerTest {
             .getResponseBody()
             .as(StepVerifier::create)
             .thenConsumeWhile(x -> {
-                assertEquals(CouponTypeEnum.TYPE_A.name(), x.getCouponType());
+                assertTrue(List.of(CouponTypeEnum.TYPE_A.name(), CouponTypeEnum.TYPE_B.name()).contains(x.getCouponType()));
                 return true;
             })
             .verifyComplete();
