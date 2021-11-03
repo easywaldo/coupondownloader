@@ -8,6 +8,7 @@ public enum CouponDownResultEnum {
     COUPON_DOWNLOADED(0),
     COUPON_NOT_FOUND(5000),
     MEMBER_NOT_FOUND(6000),
+    MEMBER_NOT_LOGIN(7000),
     UNKNOWN_ERROR(9999);
 
     private final Integer value;
