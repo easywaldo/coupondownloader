@@ -8,15 +8,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class DownloadCouponRequestDto {
     private Integer couponId;
-    private Long userId;
     private String testTime;
 
     @Builder
     public DownloadCouponRequestDto(Integer couponId,
-                                    Long userId,
                                     String testTime) {
         this.couponId = couponId;
-        this.userId = userId;
         this.testTime = testTime;
     }
 }

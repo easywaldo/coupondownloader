@@ -49,11 +49,11 @@ public class CouponController {
         HttpServletRequest request,
         @RequestBody DownloadCouponRequestDto requestDto) {
 
-        String jwtString = this.authService.getUserIdFromJwtCookie(request);
-        if (Strings.isNullOrEmpty(jwtString)) {
+        String jwtUserId = this.authService.getUserIdFromJwtCookie(request);
+        if (Strings.isNullOrEmpty(jwtUserId)) {
             return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.MEMBER_NOT_LOGIN));
         }
-        if (!this.memberService.isExistsUser(jwtString)) {
+        if (!this.memberService.isExistsUser(jwtUserId)) {
             return Mono.just(ResponseEntity.badRequest().body(CouponDownResultEnum.MEMBER_NOT_FOUND));
         }
 
@@ -64,8 +64,8 @@ public class CouponController {
                 Clock clock = Clock.fixed(Instant.parse(requestDto.getTestTime()), ZoneId.of("UTC"));
                 now = Instant.now(clock);
             }
-            var token = couponService.issueToken(requestDto.getCouponId(), requestDto.getUserId());
-            var result = this.couponService.ticketingCouponUser(now, requestDto.getCouponId(), requestDto.getUserId(), token);
+            var token = couponService.issueToken(requestDto.getCouponId(), Long.parseLong(jwtUserId));
+            var result = this.couponService.ticketingCouponUser(now, requestDto.getCouponId(), Long.parseLong(jwtUserId), token);
             logger.info("completed : " + result.name());
             return Mono.just(ResponseEntity.accepted().body(result));
         });

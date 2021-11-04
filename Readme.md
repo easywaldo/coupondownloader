@@ -11,7 +11,8 @@
     - 쿠폰다운로드 응모 및 다운로드 완료한 회원리스트 조회가 가능합니다.
 
 #### 테스트 시나리오
-- /coupon/download/{couponId}/{userId} 로 쿠폰 다운로드 합니다.
+- /member/userLogin 로 회원 로그인을 먼저 진행 합니다. (회원 아이디 범위 1...10000, 비밀번호는 아이디와 동일 합니다.)
+- /coupon/download 로 쿠폰 다운로드 합니다.  BODY 로 쿠폰다운로드에 필요한  couponId (1 또는 2), testTime 등을 전달합니다.
 - /coupon/userCouponList/{yyyyMMdd} 로 쿠폰 리스트 조회 합니다.
 
 #### 인메모리 H2 DB 정보

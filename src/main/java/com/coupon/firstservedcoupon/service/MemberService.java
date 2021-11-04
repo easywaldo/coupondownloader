@@ -21,11 +21,9 @@ public class MemberService {
 
     @Transactional(readOnly = true)
     public boolean validUser(ValidMemberRequestDto requestDto) {
-        Member member = this.memberRepository
-            .findByUserId(requestDto.getUserId())
-            .orElseThrow(() -> new IllegalArgumentException("not exists user"));
-
-        return member.getUserPwd().equals(SHAEncryptServiceImpl.getSHA512(requestDto.getUserPwd()));
+        Optional<Member> member = this.memberRepository.findByUserId(requestDto.getUserId());
+        if (member.isEmpty()) return false;
+        return member.get().getUserPwd().equals(SHAEncryptServiceImpl.getSHA512(requestDto.getUserPwd()));
     }
 
     public boolean isExistsUser(String userId) {
